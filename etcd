@@ -1,0 +1,545 @@
+#!/usr/bin/env bash 
+#
+#	etcd OCF RA. 
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of version 2 of the GNU General Public License as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it would be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# Further, this software is distributed without any warranty that it is
+# free of the rightful claim of any third person regarding infringement
+# or the like.  Any license provided herein, whether implied or
+# otherwise, applies only to this software file.  Patent licenses, if
+# any, provided herein do not apply to combinations of this program with
+# other software, or any other product whatsoever.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write the Free Software Foundation,
+# Inc., 59 Temple Place - Suite 330, Boston MA 02111-1307, USA.
+#
+
+#######################################################################
+# Initialization:
+
+: ${OCF_FUNCTIONS_DIR=${OCF_ROOT}/lib/heartbeat}
+. ${OCF_FUNCTIONS_DIR}/ocf-shellfuncs
+
+#######################################################################
+
+# Use runuser if available for SELinux.
+if [ -x /sbin/runuser ]; then
+  SU=runuser
+else
+  SU=su
+fi
+
+readconf() {
+  #
+  # This method reads in the env vars file and finds any  
+  # settings here by reading non-commented lines with 
+  # key and value pairs.  It appends _conf to the values
+  # and fixes the case and eval's them into existence.
+  #
+  CONF_LINES=()
+  
+  while IFS= read -r line; do
+    CONF_LINES+=("${line}")
+  done <<< $(cat /etc/etcd/etcd.conf | grep -E "^ETCD")
+  
+  for line in ${CONF_LINES[*]}; do
+    if [[ "${line}" =~ ^(.+)=(.+)$ ]]; then
+      lhs="OCF_RESKEY_$(echo ${BASH_REMATCH[1]} | tr '[:upper:]' '[:lower:]')_conf"
+      rhs="${BASH_REMATCH[2]}"
+      eval "${lhs}=${rhs}"
+    fi
+  done
+
+  for envvar in $(set | egrep "^OCF_RESKEY" | cut -f1 -d=); do
+    printf "%s=%s\n" "${envvar}" "${!envvar}"
+  done
+}
+
+setdefaults() {
+  # 
+  # These are the defaults for the tunables that are availble in etcd
+  #
+
+  OCF_RESKEY_etcd_grpc_keepalive_timeout_default="20s"
+  OCF_RESKEY_etcd_initial_advertise_peer_urls_default="https://localhost:2380"
+  OCF_RESKEY_etcd_advertise_client_urls_default="http://localhost:2379"
+  OCF_RESKEY_etcd_discovery_fallback_default="proxy"
+  OCF_RESKEY_etcd_initial_cluster_default="http://localhost:2380"
+  OCF_RESKEY_etcd_initial_cluster_token_default="etcd-cluster"
+  OCF_RESKEY_etcd_initial_cluster_state_default="new"
+  OCF_RESKEY_etcd_strict_reconfig_check_default="true"
+  OCF_RESKEY_etcd_enable_v2_default="true"
+  OCF_RESKEY_etcd_proxy_default="off"
+  OCF_RESKEY_etcd_proxy_failure_wait_default="5000"
+  OCF_RESKEY_etcd_proxy_refresh_interval_default="30000"
+  OCF_RESKEY_etcd_proxy_dial_timeout_default="1000"
+  OCF_RESKEY_etcd_proxy_write_timeout_default="5000"
+  OCF_RESKEY_etcd_proxy_read_timeout_default="0"
+  OCF_RESKEY_etcd_client_cert_auth_default="false"
+  OCF_RESKEY_etcd_auto_tls_default="false"
+  OCF_RESKEY_etcd_peer_client_cert_auth_default="false"
+  OCF_RESKEY_etcd_peer_trusted_ca_file_default=""
+  OCF_RESKEY_etcd_peer_auto_tls_default="false"
+  OCF_RESKEY_etcd_debug_default="false"
+  OCF_RESKEY_etcd_log_output_default="default"
+  OCF_RESKEY_etcd_force_new_cluster_default="false"
+  OCF_RESKEY_etcd_version_default="false"
+  OCF_RESKEY_etcd_auto_compaction_retention_default="0"
+  OCF_RESKEY_etcd_enable_pprof_default="false"
+  OCF_RESKEY_etcd_metrics_default="basic"
+  OCF_RESKEY_etcd_auth_token_default="simple"
+  OCF_RESKEY_etcd_user_default="etcd"
+  OCF_RESKEY_etcd_group_default="etcd"
+  OCF_RESKEY_etcd_data_dir_default="/var/lib/etcd"
+  OCF_RESKEY_etcd_pid_file_default="/var/run/etcd/etcd.pid"
+
+  for envvar in $(set | egrep "^OCF_RESKEY" | cut -f1 -d=); do
+    printf "%s=%s\n" "${envvar}" "${!envvar}"
+  done
+}
+
+default_conf_or_incoming() {
+  #
+  # This method uses prioritized defaulting to assign default, conf file (etcd.conf envvars)
+  # or provided values (Arguments to the resource adapter)
+  #
+  for envvar in $(set | egrep "^OCF_RESKEY.*=" | sed 's/_conf=/=/g' | sed 's/_default=/=/g' |  cut -f 1 -d=); do
+    confvar="${envvar}_conf"
+    defaultvar="${envvar}_default"
+
+    [[ ! ${!defaultvar} ||  "${!defaultvar}" == "" ]] && declare "${defaultvar}="
+
+    [[ "${!defaultvar}" != "" ]] && [[ "${!confvar}" == "" ]] && declare "${confvar}=${!defaultvar}"
+
+    [[ ! ${!confvar} ]] && declare "${confvar}="
+
+    [[ ! ${!envvar} || "${!envvar}" == "" ]] && declare "${envvar}=${!confvar}"
+  done
+
+  for envvar in $(set | egrep "^OCF_RESKEY" | cut -f1 -d=); do
+    printf "%s=%s\n" "${envvar}" "${!envvar}"
+  done
+
+  return 0
+}
+
+sanitize_env() {
+  ENVVARS=()
+
+  # Remove most of the environment variables
+  #
+  while IFS= read -r line; do
+    ENVVARS+=("${line}")
+  done <<< $(set | grep -E "^OCF_RESKEY.*=")
+
+  WHITELISTED=(
+    "OCF_RESKEY_etcd_dir" \
+    "OCF_RESKEY_etcd_pid_file" \
+    "OCF_RESKEY_etcd_user" \
+    "OCF_RESKEY_etcd_group" \
+    "ETCD_ARGS" \
+  )
+    
+  for envvar in "${ENVVARS[@]}"; do
+    lhs=${envvar%%=*} 
+  
+    if [[ "${WHITELISTED[*]}" =~ ${lhs} ]]; then
+      continue
+    else
+      unset ${lhs}
+    fi
+  done
+
+  return; 
+}
+
+make_etcd_arguments() {
+  # 
+  # This method takes all of the final env vars and builds a cmdline 
+  # argument list based on this
+  #
+  ALL_ARGS=()
+
+  while IFS= read -r line; do
+    ALL_ARGS+=("${line}")
+  done <<< $(set | grep -E "^OCF_RESKEY_etcd" | grep -Ev "(default|conf)=") 
+
+  BLACKLIST=( 
+    "etcd_pid_file=" \
+    "etcd_user=" \
+    "etcd_group=" \
+    "etcd_version=" \
+    "etcd_enable_pprof=" \
+    "etcd_auto_tls=" \
+    "etcd_client_cert_auth=" \
+    "etcd_debug=" \
+    "etcd_peer_client_cert_auth=" \
+    "etcd_peer_auto_tls=" \
+    "etcd_force_new_cluster=" \
+    "etcd_enable_v2=" \
+    "etcd_strict_reconfig_check=" \
+  )
+
+  declare ARG_LIST=()
+  
+  for arg in ${ALL_ARGS[@]}; do
+    varname=${arg%=*}
+    if [[ "${arg}" =~ ^OCF_RESKEY_etcd_([^=]+)=([^=]+)$ ]]; then 
+      shortenvvar=${BASH_REMATCH[1]}
+      etcdopt=${shortenvvar//_/-}
+      etcdarg=${BASH_REMATCH[2]}
+      [[ "${BLACKLIST[*]}" =~ ${shortenvvar} ]] && continue
+      defname="${varname}_default"
+      if [[ "${!varname}" != "${!defname}" ]]; then
+        [[ "${etcdarg}" =~ ^[0-9]+$ ]] && : # etcdarg=$(printf "%q" ${etcdarg})
+        ARG_LIST+=("$(printf " --%q %s" ${etcdopt} ${etcdarg})")
+        unset "${varname}"
+      fi
+    fi
+  done
+ 
+  echo ${ARG_LIST[@]}
+
+  return;
+}
+
+init_config() {
+  #
+  # Get all of the configy things.
+  # 3 sources, defaults, env file (/etc/etcd/etcd.conf)
+  # and env passed from Pacemaker
+  #
+
+  # These are a guess and if I cared, I'd fix this
+  #
+  rets=$(setdefaults) || return $OCF_ERR_GENERIC
+
+  eval "${rets}" || return $OCF_ERR_GENERIC
+
+  # This is the actual /etc/etcd/etcd.conf
+  #
+
+  rets=$(readconf) || return $OCF_ERR_GENERIC
+  
+  eval "${rets}" || return $OCF_ERR_GENERIC
+
+  # Cheap, Fast, or Good.  Pick two
+  # 
+  rets=$(default_conf_or_incoming) || return $OCF_ERR_GENERIC
+
+  eval "${rets}" || return $OCF_ERR_GENERIC
+
+  for envvar in $(set | egrep "^OCF_RESKEY" | egrep -v "_(conf|default)=" | cut -f1 -d=); do
+    echo "${envvar}=${!envvar}"
+  done
+
+  return 0;
+}
+
+meta_data() {
+  cat <<END
+<?xml version="1.0"?>
+<!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
+<resource-agent name="etcd">
+  <version>0.1</version>
+
+  <longdesc lang="en">
+This is the etcd Resource Agent. It starts, stops, and monitors
+etcd for failures.
+  </longdesc>
+  <shortdesc lang="en">etcd resource agent</shortdesc>
+  <parameters>
+  </parameters>
+
+  <actions>
+    <action name="start"        timeout="20s" />
+    <action name="stop"         timeout="20s" />
+    <action name="monitor"      timeout="20s" interval="10s" depth="0" />
+    <action name="reload"       timeout="20s" />
+    <action name="meta-data"    timeout="5s" />
+    <action name="validate-all"   timeout="20s" />
+  </actions>
+</resource-agent>
+END
+}
+
+#######################################################################
+
+
+etcd_pid() {
+  local pid=""
+
+  #pid=$(pidof /usr/bin/etcd)
+  pid=$(pgrep -u etcd -f /usr/bin/etcd)
+
+
+  if [[ "$?" == "0" ]] && ( echo ${pid} | grep -E "^[0-9]+$" >/dev/null 2>&1 ); then
+    printf "%d\n" ${pid}
+    return 0
+  else
+    printf "%d" 0
+    return 1
+  fi
+}
+
+etcd_kill() { 
+  local PIDS=() 
+  if [ "$#" == "0" ]; then
+    # No args?
+    return 1
+  fi
+
+  while (( "$#" )); do
+    PIDS+=("$1")
+    shift
+  done
+
+  for pid in ${PIDS[@]}; do
+    ocf_log info "Killing pid ${pid}"
+    kill -s 15 ${pid} || {
+      ocf_log warn "Error killing pid ${pid} - $?"
+      return $OCF_ERR_GENERIC
+    }
+  done
+ 
+  sleep 5
+
+  for pid in ${PIDS[@]}; do
+    ps -p ${pid} >/dev/null 2>&1
+
+    if [ "$?" == "0" ]; then
+      ocf_log error "Unable to kill pid ${pid}"
+      return $OCF_ERR_GENERIC
+    else
+      ocf_log info "PID ${pid} has been killed with SIGTERM"
+    fi
+  done
+
+  return 0
+}
+  
+#
+#   Run the given command in the Resource owner environment...
+#
+etcd_runasowner() {
+ echo $SU -u ${OCF_RESKEY_etcd_user} -g ${OCF_RESKEY_etcd_group} -- "/usr/local/bin/daemonize" "-p" "${OCF_RESKEY_etcd_pid_file}" "-a" "-e" "/var/lib/etcd/error.log" "-o" "/var/lib/etcd/console.log" "/usr/bin/etcd" "$@" 1>&2
+ $SU -u ${OCF_RESKEY_etcd_user} -g ${OCF_RESKEY_etcd_group} -- "/usr/local/bin/daemonize" "-p" "${OCF_RESKEY_etcd_pid_file}" "-a" "-e" "/var/lib/etcd/error.log" "-o" "/var/lib/etcd/console.log" "/usr/bin/etcd" "$@"
+}
+
+etcd_usage() {
+  cat <<END
+usage: $0 {start|stop|monitor|migrate_to|migrate_from|validate-all|meta-data}
+END
+}
+
+etcd_start() {
+  local potential_pid
+
+  if [[ -f "${OCF_RESKEY_etcd_pid_file}" ]]; then
+    potential_pid=$(cat ${OCF_RESKEY_etcd_pid_file})
+
+    kill -s 0 ${potential_pid} >/dev/null 2>&1
+     
+    if [ "$?" == "0" ]; then
+      ocf_log error "PID file ${OCF_RESKEY_etcd_pid_file} exists and is running.  Refusing to start!"
+      return $OCF_ERR_GENERIC
+    else
+      ocf_log error "PID file ${OCF_RESKEY_etcd_pid_file} exists but it stale.  Removing"
+      rm -f ${OCF_RESKEY_etcd_pid_file}
+    fi
+  fi
+
+  # 
+  # Ok, building arguments
+  #
+  ETCD_ARGS=$(make_etcd_arguments)
+
+  #
+  #  Clean the environment
+  #
+  sanitize_env
+
+  # 
+  # And go!
+  #
+  etcd_runasowner ${ETCD_ARGS}
+
+  PID=$(etcd_pid)
+
+  if [[ ! ${PID} ]] || [[ ! ${PID} =~ ^[0-9]+$ ]]; then
+    ocf_log error "Unable to start etcd"
+    return $OCF_ERR_GENERIC
+  fi
+
+  echo ${PID} > ${OCF_RESKEY_etcd_pid_file} || {
+    ocf_log error "Unable to write pidfile ${OCF_RESKEY_etcd_pid_file}"
+    return $OCF_ERR_GENERIC 
+  }
+ 
+  return $OCF_SUCCESS
+}
+
+etcd_stop() {
+  if [[ ! -f "${OCF_RESKEY_etcd_pid_file}" ]]; then
+    PID=$(etcd_pid)
+    if [ "$?" != "0" ]; then
+      ocf_log info "ETCD is not running on this node, cannot stop"
+      return $OCF_SUCCESS
+    else
+      ocf_log error "ETCD is running on this node but has no pid file"
+      etcd_kill ${PID} || {
+        ocf_log info "ETCD is refusing to die!"
+        return $OCF_ERR_GENERIC
+      }
+      return $OCF_SUCCESS
+    fi
+  else
+    pidfile_pid=$(cat ${OCF_RESKEY_etcd_pid_file})
+    
+    PID=$(etcd_pid) 
+ 
+    if  [[ "${PID}" == "0" ]]; then
+      ocf_log info "ETCD was running but is now not!"
+      rm -f ${OCF_RESKEY_etcd_pid_file} >/dev/null 2>&1
+      return $OCF_SUCCESS;
+    elif [[ "${PID}" != "${pidfile_pid}" ]]; then
+      ocf_log warn "Pid file and pidof report different pids!"
+      
+      etcd_kill ${PID} ${pidfile_pid} && {
+        rm -f ${OCF_RESKEY_etcd_pid_file} 
+        ocf_log info "Successfully shut down ETCD"
+        return $OCF_SUCCESS
+      } || {
+        ocf_log error "Unable to kill pid ${PID} and/or ${pidfile_pid}"
+        return $OCF_ERR_GENERIC
+      }
+    else 
+      etcd_kill ${PID}
+      if [ "$?" == "0" ]; then
+        rm -f ${OCF_RESKEY_etcd_pid_file}
+        ocf_log info "Successfully shut down ETCD"
+        return $OCF_SUCCESS
+      else
+        ocf_log error "Unable to shut down ETCD"
+        return $OCF_ERR_GENERIC
+      fi
+    fi
+  fi
+}
+
+etcd_monitor() {
+  # Monitor _MUST!_ differentiate correctly between running
+  # (SUCCESS), failed (ERROR) or _cleanly_ stopped (NOT RUNNING).
+  # That is THREE states, not just yes/no.
+
+  if [[ ! -f ${OCF_RESKEY_etcd_pid_file} ]]; then 
+    etcd_pid && {
+      ocf_log warn "ETCD running with no pid file!"
+      return $OCF_ERR_GENERIC
+    }
+
+    return $OCF_NOT_RUNNING
+  fi 
+
+  actualpid=$(etcd_pid) || {
+    ocf_log error "Unable to identify running etcd"
+    return $OCF_ERR_GENERIC
+  }
+
+  filepid=$(cat ${OCF_RESKEY_etcd_pid_file}) || {
+    ocf_log warn "Unable to get pid from file"
+    return $OCF_ERR_GENERIC
+  }
+  
+  if [[ "${filepid}" != "${actualpid}" ]]; then
+    ocf_log warn "ETCD is running however it is not the pid referenced in the pidfile"
+    return $OCF_ERR_GENERIC
+  fi
+
+  kill -s 0 $(cat ${OCF_RESKEY_etcd_pid_file}) >/dev/null 2>&1 || {
+    ocf_log error "Pid file ${OCF_RESKEY_etcd_pid_file} exists but pid is not running"
+    return $OCF_ERR_GENERIC
+  }
+
+  ETCDCTL_API=3 etcdctl --endpoints=https://[127.0.0.1]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+    --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key \
+    get foo || {
+    ocf_log error "Unable to query etcd at https://[127.0.0.1]:2379"
+    return $OCF_ERR_GENERIC
+  }
+
+  return $OCF_SUCCESS
+}
+
+etcd_validate() {
+  return $OCF_SUCCESS
+}
+
+#
+# first we will initialize the config
+#
+rets=$(init_config) || return $OCF_ERR_GENERIC
+
+set -a
+eval "${rets}"  || return $OCF_ERR_GENERIC
+set +a
+
+#
+# Then we determine the arguments
+#
+case $__OCF_ACTION in
+  meta-data)
+    meta_data
+    exit $OCF_SUCCESS
+    ;;
+  start)
+    ocf_log info "Starting ${OCF_RESOURCE_INSTANCE}."
+    etcd_start
+    ;;
+  stop)
+    ocf_log info "Stopping ${OCF_RESOURCE_INSTANCE}."
+    etcd_stop
+    ;;
+  monitor)
+    etcd_monitor
+    ;;
+  reload)
+    ocf_log info "Reloading ${OCF_RESOURCE_INSTANCE} ..."
+    etcd_stop
+    sleep 5
+    etcd_start
+    set +x
+    ;;
+  validate-all)
+    etcd_validate
+    ;;
+  usage|help)
+    etcd_usage
+    exit $OCF_SUCCESS
+    ;;
+  migrate_to)
+    ocf_log info "Prepping to stop ${OCF_RESOURCE_INSTANCE} for migration"
+    return $OCF_SUCCESS
+    ;;
+  migrate_from)
+    ocf_log info "Prepping to start ${OCF_RESOURCE_INSTANCE} after migration"
+    return $OCF_SUCCESS
+    #etcd_start
+    ;;
+  *)
+    etcd_usage
+    exit $OCF_ERR_UNIMPLEMENTED
+    ;;
+esac
+rc=$?
+ocf_log debug "${OCF_RESOURCE_INSTANCE} $__OCF_ACTION : $rc"
+exit $rc
+
