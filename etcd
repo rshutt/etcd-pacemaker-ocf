@@ -1,6 +1,6 @@
-#!/usr/bin/env bash 
+#!/usr/bin/env bash
 #
-#	etcd OCF RA. 
+#	etcd OCF RA.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of version 2 of the GNU General Public License as
@@ -23,12 +23,161 @@
 #
 
 #######################################################################
+
 # Initialization:
 
-: ${OCF_FUNCTIONS_DIR=${OCF_ROOT}/lib/heartbeat}
-. ${OCF_FUNCTIONS_DIR}/ocf-shellfuncs
+: "${OCF_FUNCTIONS_DIR=${OCF_ROOT}/lib/heartbeat}"
+. "${OCF_FUNCTIONS_DIR}/ocf-shellfuncs"
 
-#######################################################################
+#
+# These are the defaults for the tunables that are availble in etcd
+#
+
+OCF_RESKEY_name_default="default"
+OCF_RESKEY_data_dir_default="default.etcd"
+OCF_RESKEY_wal_dir_default=""
+OCF_RESKEY_snapshot_count_default="100000"
+OCF_RESKEY_heartbeat_interval_default="100"
+OCF_RESKEY_election_timeout_default="1000"
+OCF_RESKEY_initial_election_tick_advance_default="true"
+OCF_RESKEY_listen_peer_urls_default="http://localhost:2380"
+OCF_RESKEY_listen_client_urls_default="http://localhost:2379"
+OCF_RESKEY_max_snapshots_default="5"
+OCF_RESKEY_max_wals_default="5"
+OCF_RESKEY_cors_default=""
+OCF_RESKEY_quota_backend_bytes_default="0"
+OCF_RESKEY_backend_batch_limit_default="0"
+OCF_RESKEY_backend_bbolt_freelist_type_default="map"
+OCF_RESKEY_backend_batch_interval_default="0"
+OCF_RESKEY_max_txn_ops_default="128"
+OCF_RESKEY_max_request_bytes_default="1572864"
+OCF_RESKEY_grpc_keepalive_min_time_default="5s"
+OCF_RESKEY_grpc_keepalive_interval_default="2h"
+OCF_RESKEY_grpc_keepalive_timeout_default="20s"
+OCF_RESKEY_initial_advertise_peer_urls_default="http://localhost:2380"
+OCF_RESKEY_initial_cluster_default="http://localhost:2380"
+OCF_RESKEY_initial_cluster_state_default="new"
+OCF_RESKEY_initial_cluster_token_default="etcd_cluster"
+OCF_RESKEY_advertise_client_urls_default="http://localhost:2379"
+OCF_RESKEY_discovery_default=""
+OCF_RESKEY_discovery_srv_default=""
+OCF_RESKEY_discovery_name_default=""
+OCF_RESKEY_discovery_fallback_default="proxy"
+OCF_RESKEY_discovery_proxy_default=""
+OCF_RESKEY_strict_reconfig_check_default="true"
+OCF_RESKEY_auto_compaction_retention_default="0"
+OCF_RESKEY_auto_compaction_mode_default="periodic"
+OCF_RESKEY_enable_v2_default="true"
+OCF_RESKEY_proxy_default="off"
+OCF_RESKEY_proxy_failure_wait_default="5000"
+OCF_RESKEY_proxy_refresh_interval_default="30000"
+OCF_RESKEY_proxy_dial_timeout_default="1000"
+OCF_RESKEY_proxy_write_timeout_default="5000"
+OCF_RESKEY_proxy_read_timeout_default="0"
+OCF_RESKEY_cert_file_default=""
+OCF_RESKEY_key_file_default=""
+OCF_RESKEY_client_cert_auth_default="false"
+OCF_RESKEY_client_crl_file_default=""
+OCF_RESKEY_client_cert_allowed_hostname_default=""
+OCF_RESKEY_trusted_ca_file_default=""
+OCF_RESKEY_auto_tls_default="false"
+OCF_RESKEY_peer_cert_file_default=""
+OCF_RESKEY_peer_key_file_default=""
+OCF_RESKEY_peer_client_cert_auth_default="false"
+OCF_RESKEY_peer_crl_file_default=""
+OCF_RESKEY_peer_trusted_ca_file_default=""
+OCF_RESKEY_peer_auto_tls_default="false"
+OCF_RESKEY_peer_cert_allowed_cn_default=""
+OCF_RESKEY_peer_cert_allowed_hostname_default=""
+OCF_RESKEY_cipher_suites_default=""
+OCF_RESKEY_logger_default="capnslog"
+OCF_RESKEY_log_outputs_default="default"
+OCF_RESKEY_log_level_default="info"
+OCF_RESKEY_force_new_cluster_default="false"
+OCF_RESKEY_version_default="false"
+OCF_RESKEY_config_file_default=""
+OCF_RESKEY_enable_pprof_default="false"
+OCF_RESKEY_metrics_default="basic"
+OCF_RESKEY_listen_metrics_urls_default=""
+OCF_RESKEY_auth_token_default="simple"
+OCF_RESKEY_bcrypt_cost_default="10"
+OCF_RESKEY_user_default="etcd"
+OCF_RESKEY_group_default="etcd"
+OCF_RESKEY_pid_file_default="/var/run/etcd/etcd.pid"
+
+: ${OCF_RESKEY_name="${OCF_RESKEY_name_default}"}
+: ${OCF_RESKEY_data_dir="${OCF_RESKEY_data_dir_default}"}
+: ${OCF_RESKEY_wal_dir="${OCF_RESKEY_wal_dir_default}"}
+: ${OCF_RESKEY_snapshot_count="${OCF_RESKEY_snapshot_count_default}"}
+: ${OCF_RESKEY_heartbeat_interval="${OCF_RESKEY_heartbeat_interval_default}"}
+: ${OCF_RESKEY_election_timeout="${OCF_RESKEY_election_timeout_default}"}
+: ${OCF_RESKEY_initial_election_tick_advance="${OCF_RESKEY_initial_election_tick_advance_default}"}
+: ${OCF_RESKEY_listen_peer_urls="${OCF_RESKEY_listen_peer_urls_default}"}
+: ${OCF_RESKEY_listen_client_urls="${OCF_RESKEY_listen_client_urls_default}"}
+: ${OCF_RESKEY_max_snapshots="${OCF_RESKEY_max_snapshots_default}"}
+: ${OCF_RESKEY_max_wals="${OCF_RESKEY_max_wals_default}"}
+: ${OCF_RESKEY_cors="${OCF_RESKEY_cors_default}"}
+: ${OCF_RESKEY_quota_backend_bytes="${OCF_RESKEY_quota_backend_bytes_default}"}
+: ${OCF_RESKEY_backend_batch_limit="${OCF_RESKEY_backend_batch_limit_default}"}
+: ${OCF_RESKEY_backend_bbolt_freelist_type="${OCF_RESKEY_backend_bbolt_freelist_type_default}"}
+: ${OCF_RESKEY_backend_batch_interval="${OCF_RESKEY_backend_batch_interval_default}"}
+: ${OCF_RESKEY_max_txn_ops="${OCF_RESKEY_max_txn_ops_default}"}
+: ${OCF_RESKEY_max_request_bytes="${OCF_RESKEY_max_request_bytes_default}"}
+: ${OCF_RESKEY_grpc_keepalive_min_time="${OCF_RESKEY_grpc_keepalive_min_time_default}"}
+: ${OCF_RESKEY_grpc_keepalive_interval="${OCF_RESKEY_grpc_keepalive_interval_default}"}
+: ${OCF_RESKEY_grpc_keepalive_timeout="${OCF_RESKEY_grpc_keepalive_timeout_default}"}
+: ${OCF_RESKEY_initial_advertise_peer_urls="${OCF_RESKEY_initial_advertise_peer_urls_default}"}
+: ${OCF_RESKEY_initial_cluster="${OCF_RESKEY_initial_cluster_default}"}
+: ${OCF_RESKEY_initial_cluster_state="${OCF_RESKEY_initial_cluster_state_default}"}
+: ${OCF_RESKEY_initial_cluster_token="${OCF_RESKEY_initial_cluster_token_default}"}
+: ${OCF_RESKEY_advertise_client_urls="${OCF_RESKEY_advertise_client_urls_default}"}
+: ${OCF_RESKEY_discovery="${OCF_RESKEY_discovery_default}"}
+: ${OCF_RESKEY_discovery_srv="${OCF_RESKEY_discovery_srv_default}"}
+: ${OCF_RESKEY_discovery_name="${OCF_RESKEY_discovery_name_default}"}
+: ${OCF_RESKEY_discovery_fallback="${OCF_RESKEY_discovery_fallback_default}"}
+: ${OCF_RESKEY_discovery_proxy="${OCF_RESKEY_discovery_proxy_default}"}
+: ${OCF_RESKEY_strict_reconfig_check="${OCF_RESKEY_strict_reconfig_check_default}"}
+: ${OCF_RESKEY_auto_compaction_retention="${OCF_RESKEY_auto_compaction_retention_default}"}
+: ${OCF_RESKEY_auto_compaction_mode="${OCF_RESKEY_auto_compaction_mode_default}"}
+: ${OCF_RESKEY_enable_v2="${OCF_RESKEY_enable_v2_default}"}
+: ${OCF_RESKEY_proxy="${OCF_RESKEY_proxy_default}"}
+: ${OCF_RESKEY_proxy_failure_wait="${OCF_RESKEY_proxy_failure_wait_default}"}
+: ${OCF_RESKEY_proxy_refresh_interval="${OCF_RESKEY_proxy_refresh_interval_default}"}
+: ${OCF_RESKEY_proxy_dial_timeout="${OCF_RESKEY_proxy_dial_timeout_default}"}
+: ${OCF_RESKEY_proxy_write_timeout="${OCF_RESKEY_proxy_write_timeout_default}"}
+: ${OCF_RESKEY_proxy_read_timeout="${OCF_RESKEY_proxy_read_timeout_default}"}
+: ${OCF_RESKEY_cert_file="${OCF_RESKEY_cert_file_default}"}
+: ${OCF_RESKEY_key_file="${OCF_RESKEY_key_file_default}"}
+: ${OCF_RESKEY_client_cert_auth="${OCF_RESKEY_client_cert_auth_default}"}
+: ${OCF_RESKEY_client_crl_file="${OCF_RESKEY_client_crl_file_default}"}
+: ${OCF_RESKEY_client_cert_allowed_hostname="${OCF_RESKEY_client_cert_allowed_hostname_default}"}
+: ${OCF_RESKEY_trusted_ca_file="${OCF_RESKEY_trusted_ca_file_default}"}
+: ${OCF_RESKEY_auto_tls="${OCF_RESKEY_auto_tls_default}"}
+: ${OCF_RESKEY_peer_cert_file="${OCF_RESKEY_peer_cert_file_default}"}
+: ${OCF_RESKEY_peer_key_file="${OCF_RESKEY_peer_key_file_default}"}
+: ${OCF_RESKEY_peer_client_cert_auth="${OCF_RESKEY_peer_client_cert_auth_default}"}
+: ${OCF_RESKEY_peer_crl_file="${OCF_RESKEY_peer_crl_file_default}"}
+: ${OCF_RESKEY_peer_trusted_ca_file="${OCF_RESKEY_peer_trusted_ca_file_default}"}
+: ${OCF_RESKEY_peer_auto_tls="${OCF_RESKEY_peer_auto_tls_default}"}
+: ${OCF_RESKEY_peer_cert_allowed_cn="${OCF_RESKEY_peer_cert_allowed_cn_default}"}
+: ${OCF_RESKEY_peer_cert_allowed_hostname="${OCF_RESKEY_peer_cert_allowed_hostname_default}"}
+: ${OCF_RESKEY_cipher_suites="${OCF_RESKEY_cipher_suites_default}"}
+: ${OCF_RESKEY_logger="${OCF_RESKEY_logger_default}"}
+: ${OCF_RESKEY_log_outputs="${OCF_RESKEY_log_outputs_default}"}
+: ${OCF_RESKEY_log_level="${OCF_RESKEY_log_level_default}"}
+: ${OCF_RESKEY_force_new_cluster="${OCF_RESKEY_force_new_cluster_default}"}
+: ${OCF_RESKEY_version="${OCF_RESKEY_version_default}"}
+: ${OCF_RESKEY_config_file="${OCF_RESKEY_config_file_default}"}
+: ${OCF_RESKEY_enable_pprof="${OCF_RESKEY_enable_pprof_default}"}
+: ${OCF_RESKEY_metrics="${OCF_RESKEY_metrics_default}"}
+: ${OCF_RESKEY_listen_metrics_urls="${OCF_RESKEY_listen_metrics_urls_default}"}
+: ${OCF_RESKEY_auth_token="${OCF_RESKEY_auth_token_default}"}
+: ${OCF_RESKEY_bcrypt_cost="${OCF_RESKEY_bcrypt_cost_default}"}
+: ${OCF_RESKEY_user="${OCF_RESKEY_user_default}"}
+: ${OCF_RESKEY_group="${OCF_RESKEY_group_default}"}
+: ${OCF_RESKEY_pid_file="${OCF_RESKEY_pid_file_default}"}
+
+######################################################################
 
 # Use runuser if available for SELinux.
 if [ -x /sbin/runuser ]; then
@@ -37,211 +186,48 @@ else
   SU=su
 fi
 
-readconf() {
-  #
-  # This method reads in the env vars file and finds any  
-  # settings here by reading non-commented lines with 
-  # key and value pairs.  It appends _conf to the values
-  # and fixes the case and eval's them into existence.
-  #
-  CONF_LINES=()
-  
-  while IFS= read -r line; do
-    CONF_LINES+=("${line}")
-  done <<< $(cat /etc/etcd/etcd.conf | grep -E "^ETCD")
-  
-  for line in ${CONF_LINES[*]}; do
-    if [[ "${line}" =~ ^(.+)=(.+)$ ]]; then
-      lhs="OCF_RESKEY_$(echo ${BASH_REMATCH[1]} | tr '[:upper:]' '[:lower:]')_conf"
-      rhs="${BASH_REMATCH[2]}"
-      eval "${lhs}=${rhs}"
-    fi
-  done
-
-  for envvar in $(set | egrep "^OCF_RESKEY" | cut -f1 -d=); do
-    printf "%s=%s\n" "${envvar}" "${!envvar}"
-  done
-}
-
-setdefaults() {
-  # 
-  # These are the defaults for the tunables that are availble in etcd
-  #
-
-  OCF_RESKEY_etcd_grpc_keepalive_timeout_default="20s"
-  OCF_RESKEY_etcd_initial_advertise_peer_urls_default="https://localhost:2380"
-  OCF_RESKEY_etcd_advertise_client_urls_default="http://localhost:2379"
-  OCF_RESKEY_etcd_discovery_fallback_default="proxy"
-  OCF_RESKEY_etcd_initial_cluster_default="http://localhost:2380"
-  OCF_RESKEY_etcd_initial_cluster_token_default="etcd-cluster"
-  OCF_RESKEY_etcd_initial_cluster_state_default="new"
-  OCF_RESKEY_etcd_strict_reconfig_check_default="true"
-  OCF_RESKEY_etcd_enable_v2_default="true"
-  OCF_RESKEY_etcd_proxy_default="off"
-  OCF_RESKEY_etcd_proxy_failure_wait_default="5000"
-  OCF_RESKEY_etcd_proxy_refresh_interval_default="30000"
-  OCF_RESKEY_etcd_proxy_dial_timeout_default="1000"
-  OCF_RESKEY_etcd_proxy_write_timeout_default="5000"
-  OCF_RESKEY_etcd_proxy_read_timeout_default="0"
-  OCF_RESKEY_etcd_client_cert_auth_default="false"
-  OCF_RESKEY_etcd_auto_tls_default="false"
-  OCF_RESKEY_etcd_peer_client_cert_auth_default="false"
-  OCF_RESKEY_etcd_peer_trusted_ca_file_default=""
-  OCF_RESKEY_etcd_peer_auto_tls_default="false"
-  OCF_RESKEY_etcd_debug_default="false"
-  OCF_RESKEY_etcd_log_output_default="default"
-  OCF_RESKEY_etcd_force_new_cluster_default="false"
-  OCF_RESKEY_etcd_version_default="false"
-  OCF_RESKEY_etcd_auto_compaction_retention_default="0"
-  OCF_RESKEY_etcd_enable_pprof_default="false"
-  OCF_RESKEY_etcd_metrics_default="basic"
-  OCF_RESKEY_etcd_auth_token_default="simple"
-  OCF_RESKEY_etcd_user_default="etcd"
-  OCF_RESKEY_etcd_group_default="etcd"
-  OCF_RESKEY_etcd_data_dir_default="/var/lib/etcd"
-  OCF_RESKEY_etcd_pid_file_default="/var/run/etcd/etcd.pid"
-
-  for envvar in $(set | egrep "^OCF_RESKEY" | cut -f1 -d=); do
-    printf "%s=%s\n" "${envvar}" "${!envvar}"
-  done
-}
-
-default_conf_or_incoming() {
-  #
-  # This method uses prioritized defaulting to assign default, conf file (etcd.conf envvars)
-  # or provided values (Arguments to the resource adapter)
-  #
-  for envvar in $(set | egrep "^OCF_RESKEY.*=" | sed 's/_conf=/=/g' | sed 's/_default=/=/g' |  cut -f 1 -d=); do
-    confvar="${envvar}_conf"
-    defaultvar="${envvar}_default"
-
-    [[ ! ${!defaultvar} ||  "${!defaultvar}" == "" ]] && declare "${defaultvar}="
-
-    [[ "${!defaultvar}" != "" ]] && [[ "${!confvar}" == "" ]] && declare "${confvar}=${!defaultvar}"
-
-    [[ ! ${!confvar} ]] && declare "${confvar}="
-
-    [[ ! ${!envvar} || "${!envvar}" == "" ]] && declare "${envvar}=${!confvar}"
-  done
-
-  for envvar in $(set | egrep "^OCF_RESKEY" | cut -f1 -d=); do
-    printf "%s=%s\n" "${envvar}" "${!envvar}"
-  done
-
-  return 0
-}
-
-sanitize_env() {
-  ENVVARS=()
-
-  # Remove most of the environment variables
-  #
-  while IFS= read -r line; do
-    ENVVARS+=("${line}")
-  done <<< $(set | grep -E "^OCF_RESKEY.*=")
-
-  WHITELISTED=(
-    "OCF_RESKEY_etcd_dir" \
-    "OCF_RESKEY_etcd_pid_file" \
-    "OCF_RESKEY_etcd_user" \
-    "OCF_RESKEY_etcd_group" \
-    "ETCD_ARGS" \
-  )
-    
-  for envvar in "${ENVVARS[@]}"; do
-    lhs=${envvar%%=*} 
-  
-    if [[ "${WHITELISTED[*]}" =~ ${lhs} ]]; then
-      continue
-    else
-      unset ${lhs}
-    fi
-  done
-
-  return; 
-}
-
 make_etcd_arguments() {
-  # 
-  # This method takes all of the final env vars and builds a cmdline 
+  #
+  # This method takes all of the final env vars and builds a cmdline
   # argument list based on this
   #
-  ALL_ARGS=()
+  ALL_ENV=()
 
   while IFS= read -r line; do
-    ALL_ARGS+=("${line}")
-  done <<< $(set | grep -E "^OCF_RESKEY_etcd" | grep -Ev "(default|conf)=") 
+    ALL_ENV+=("${line}")
+  done <<<"$(set | grep -E "^OCF_RESKEY_" | grep -Evi "CRM_" | grep -Ev "default=")"
 
-  BLACKLIST=( 
-    "etcd_pid_file=" \
-    "etcd_user=" \
-    "etcd_group=" \
-    "etcd_version=" \
-    "etcd_enable_pprof=" \
-    "etcd_auto_tls=" \
-    "etcd_client_cert_auth=" \
-    "etcd_debug=" \
-    "etcd_peer_client_cert_auth=" \
-    "etcd_peer_auto_tls=" \
-    "etcd_force_new_cluster=" \
-    "etcd_enable_v2=" \
-    "etcd_strict_reconfig_check=" \
+  BLACKLIST=(
+    "pid-file="
+    "user="
+    "group="
+    "CRM"
   )
 
   declare ARG_LIST=()
-  
-  for arg in ${ALL_ARGS[@]}; do
-    varname=${arg%=*}
-    if [[ "${arg}" =~ ^OCF_RESKEY_etcd_([^=]+)=([^=]+)$ ]]; then 
+
+  for arg in "${ALL_ENV[@]}"; do
+    varname=${arg%%=*}
+    if [[ "${arg}" =~ ^OCF_RESKEY_([^=]+)=([^=]+)$ ]]; then
       shortenvvar=${BASH_REMATCH[1]}
       etcdopt=${shortenvvar//_/-}
       etcdarg=${BASH_REMATCH[2]}
       [[ "${BLACKLIST[*]}" =~ ${shortenvvar} ]] && continue
       defname="${varname}_default"
       if [[ "${!varname}" != "${!defname}" ]]; then
+        >&2 echo "${varname} is not default"
         [[ "${etcdarg}" =~ ^[0-9]+$ ]] && : # etcdarg=$(printf "%q" ${etcdarg})
-        ARG_LIST+=("$(printf " --%q %s" ${etcdopt} ${etcdarg})")
+        ARG_LIST+=("$(printf " --%q=%s" ${etcdopt} ${etcdarg})")
         unset "${varname}"
       fi
     fi
   done
- 
-  echo ${ARG_LIST[@]}
 
-  return;
-}
+  >&2 echo "${ARG_LIST[@]}"
 
-init_config() {
-  #
-  # Get all of the configy things.
-  # 3 sources, defaults, env file (/etc/etcd/etcd.conf)
-  # and env passed from Pacemaker
-  #
+  echo "${ARG_LIST[@]}"
 
-  # These are a guess and if I cared, I'd fix this
-  #
-  rets=$(setdefaults) || return $OCF_ERR_GENERIC
-
-  eval "${rets}" || return $OCF_ERR_GENERIC
-
-  # This is the actual /etc/etcd/etcd.conf
-  #
-
-  rets=$(readconf) || return $OCF_ERR_GENERIC
-  
-  eval "${rets}" || return $OCF_ERR_GENERIC
-
-  # Cheap, Fast, or Good.  Pick two
-  # 
-  rets=$(default_conf_or_incoming) || return $OCF_ERR_GENERIC
-
-  eval "${rets}" || return $OCF_ERR_GENERIC
-
-  for envvar in $(set | egrep "^OCF_RESKEY" | egrep -v "_(conf|default)=" | cut -f1 -d=); do
-    echo "${envvar}=${!envvar}"
-  done
-
-  return 0;
+  return
 }
 
 meta_data() {
@@ -249,7 +235,7 @@ meta_data() {
 <?xml version="1.0"?>
 <!DOCTYPE resource-agent SYSTEM "ra-api-1.dtd">
 <resource-agent name="etcd">
-  <version>0.1</version>
+  <version>1.0</version>
 
   <longdesc lang="en">
 This is the etcd Resource Agent. It starts, stops, and monitors
@@ -257,6 +243,216 @@ etcd for failures.
   </longdesc>
   <shortdesc lang="en">etcd resource agent</shortdesc>
   <parameters>
+    <parameter name="name" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_name_default}" />
+    </parameter>
+    <parameter name="data_dir" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_data_dir_default}" />
+    </parameter>
+    <parameter name="wal_dir" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_wal_dir_default}" />
+    </parameter>
+    <parameter name="snapshot_count" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_snapshot_count_default}" />
+    </parameter>
+    <parameter name="heartbeat_interval" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_heartbeat_interval_default}" />
+    </parameter>
+    <parameter name="election_timeout" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_election_timeout_default}" />
+    </parameter>
+    <parameter name="initial_election_tick_advance" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_initial_election_tick_advance_default}" />
+    </parameter>
+    <parameter name="listen_peer_urls" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_listen_peer_urls_default}" />
+    </parameter>
+    <parameter name="listen_client_urls" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_listen_client_urls_default}" />
+    </parameter>
+    <parameter name="max_snapshots" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_max_snapshots_default}" />
+    </parameter>
+    <parameter name="max_wals" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_max_wals_default}" />
+    </parameter>
+    <parameter name="cors" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_cors_default}" />
+    </parameter>
+    <parameter name="quota_backend_bytes" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_quota_backend_bytes_default}" />
+    </parameter>
+    <parameter name="backend_batch_limit" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_backend_batch_limit_default}" />
+    </parameter>
+    <parameter name="backend_bbolt_freelist_type" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_backend_bbolt_freelist_type_default}" />
+    </parameter>
+    <parameter name="backend_batch_interval" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_backend_batch_interval_default}" />
+    </parameter>
+    <parameter name="max_txn_ops" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_max_txn_ops_default}" />
+    </parameter>
+    <parameter name="max_request_bytes" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_max_request_bytes_default}" />
+    </parameter>
+    <parameter name="grpc_keepalive_min_time" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_grpc_keepalive_min_time_default}" />
+    </parameter>
+    <parameter name="grpc_keepalive_interval" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_grpc_keepalive_interval_default}" />
+    </parameter>
+    <parameter name="grpc_keepalive_timeout" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_grpc_keepalive_timeout_default}" />
+    </parameter>
+    <parameter name="initial_advertise_peer_urls" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_initial_advertise_peer_urls_default}" />
+    </parameter>
+    <parameter name="initial_cluster" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_initial_cluster_default}" />
+    </parameter>
+    <parameter name="initial_cluster_state" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_initial_cluster_state_default}" />
+    </parameter>
+    <parameter name="initial_cluster_token" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_initial_cluster_token_default}" />
+    </parameter>
+    <parameter name="advertise_client_urls" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_advertise_client_urls_default}" />
+    </parameter>
+    <parameter name="discovery" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_discovery_default}" />
+    </parameter>
+    <parameter name="discovery_srv" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_discovery_srv_default}" />
+    </parameter>
+    <parameter name="discovery_name" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_discovery_name_default}" />
+    </parameter>
+    <parameter name="discovery_fallback" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_discovery_fallback_default}" />
+    </parameter>
+    <parameter name="discovery_proxy" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_discovery_proxy_default}" />
+    </parameter>
+    <parameter name="strict_reconfig_check" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_strict_reconfig_check_default}" />
+    </parameter>
+    <parameter name="auto_compaction_retention" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_auto_compaction_retention_default}" />
+    </parameter>
+    <parameter name="auto_compaction_mode" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_auto_compaction_mode_default}" />
+    </parameter>
+    <parameter name="enable_v2" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_enable_v2_default}" />
+    </parameter>
+    <parameter name="proxy" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_proxy_default}" />
+    </parameter>
+    <parameter name="proxy_failure_wait" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_proxy_failure_wait_default}" />
+    </parameter>
+    <parameter name="proxy_refresh_interval" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_proxy_refresh_interval_default}" />
+    </parameter>
+    <parameter name="proxy_dial_timeout" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_proxy_dial_timeout_default}" />
+    </parameter>
+    <parameter name="proxy_write_timeout" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_proxy_write_timeout_default}" />
+    </parameter>
+    <parameter name="proxy_read_timeout" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_proxy_read_timeout_default}" />
+    </parameter>
+    <parameter name="cert_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_cert_file_default}" />
+    </parameter>
+    <parameter name="key_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_key_file_default}" />
+    </parameter>
+    <parameter name="client_cert_auth" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_client_cert_auth_default}" />
+    </parameter>
+    <parameter name="client_crl_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_client_crl_file_default}" />
+    </parameter>
+    <parameter name="client_cert_allowed_hostname" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_client_cert_allowed_hostname_default}" />
+    </parameter>
+    <parameter name="trusted_ca_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_trusted_ca_file_default}" />
+    </parameter>
+    <parameter name="auto_tls" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_auto_tls_default}" />
+    </parameter>
+    <parameter name="peer_cert_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_peer_cert_file_default}" />
+    </parameter>
+    <parameter name="peer_key_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_peer_key_file_default}" />
+    </parameter>
+    <parameter name="peer_client_cert_auth" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_peer_client_cert_auth_default}" />
+    </parameter>
+    <parameter name="peer_crl_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_peer_crl_file_default}" />
+    </parameter>
+    <parameter name="peer_trusted_ca_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_peer_trusted_ca_file_default}" />
+    </parameter>
+    <parameter name="peer_auto_tls" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_peer_auto_tls_default}" />
+    </parameter>
+    <parameter name="peer_cert_allowed_cn" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_peer_cert_allowed_cn_default}" />
+    </parameter>
+    <parameter name="peer_cert_allowed_hostname" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_peer_cert_allowed_hostname_default}" />
+    </parameter>
+    <parameter name="cipher_suites" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_cipher_suites_default}" />
+    </parameter>
+    <parameter name="logger" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_logger_default}" />
+    </parameter>
+    <parameter name="log_outputs" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_log_outputs_default}" />
+    </parameter>
+    <parameter name="log_level" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_log_level_default}" />
+    </parameter>
+    <parameter name="force_new_cluster" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_force_new_cluster_default}" />
+    </parameter>
+    <parameter name="version" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_version_default}" />
+    </parameter>
+    <parameter name="config_file" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_config_file_default}" />
+    </parameter>
+    <parameter name="enable_pprof" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_enable_pprof_default}" />
+    </parameter>
+    <parameter name="metrics" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_metrics_default}" />
+    </parameter>
+    <parameter name="listen_metrics_urls" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_listen_metrics_urls_default}" />
+    </parameter>
+    <parameter name="auth_token" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_auth_token_default}" />
+    </parameter>
+    <parameter name="bcrypt_cost" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_bcrypt_cost_default}" />
+    </parameter>
+    <parameter name="user" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_user_default}" />
+    </parameter>
+    <parameter name="group" unique="0" required="0">
+      <content type="string" default="${OCF_RESKEY_group_default}" />
+    </parameter>
   </parameters>
 
   <actions>
@@ -273,16 +469,14 @@ END
 
 #######################################################################
 
-
 etcd_pid() {
   local pid=""
 
-  #pid=$(pidof /usr/bin/etcd)
-  pid=$(pgrep -u etcd -f /usr/bin/etcd)
+  #pid=$(pidof /usr/local/sbin/etcd)
+  pid=$(pgrep -u etcd -f /usr/local/sbin/etcd)
 
-
-  if [[ "$?" == "0" ]] && ( echo ${pid} | grep -E "^[0-9]+$" >/dev/null 2>&1 ); then
-    printf "%d\n" ${pid}
+  if [[ "$?" == "0" ]] && (echo "${pid}" | grep -E "^[0-9]+$" >/dev/null 2>&1); then
+    printf "%d\n" "${pid}"
     return 0
   else
     printf "%d" 0
@@ -290,34 +484,34 @@ etcd_pid() {
   fi
 }
 
-etcd_kill() { 
-  local PIDS=() 
+etcd_kill() {
+  local PIDS=()
   if [ "$#" == "0" ]; then
     # No args?
     return 1
   fi
 
-  while (( "$#" )); do
+  while (("$#")); do
     PIDS+=("$1")
     shift
   done
 
-  for pid in ${PIDS[@]}; do
+  for pid in "${PIDS[@]}"; do
     ocf_log info "Killing pid ${pid}"
-    kill -s 15 ${pid} || {
+    kill -s 15 "${pid}" || {
       ocf_log warn "Error killing pid ${pid} - $?"
-      return $OCF_ERR_GENERIC
+      return "$OCF_ERR_GENERIC"
     }
   done
- 
+
   sleep 5
 
-  for pid in ${PIDS[@]}; do
-    ps -p ${pid} >/dev/null 2>&1
+  for pid in "${PIDS[@]}"; do
+    ps -p "${pid}" >/dev/null 2>&1
 
     if [ "$?" == "0" ]; then
       ocf_log error "Unable to kill pid ${pid}"
-      return $OCF_ERR_GENERIC
+      return "$OCF_ERR_GENERIC"
     else
       ocf_log info "PID ${pid} has been killed with SIGTERM"
     fi
@@ -325,13 +519,24 @@ etcd_kill() {
 
   return 0
 }
-  
+
 #
 #   Run the given command in the Resource owner environment...
 #
 etcd_runasowner() {
- echo $SU -u ${OCF_RESKEY_etcd_user} -g ${OCF_RESKEY_etcd_group} -- "/usr/local/bin/daemonize" "-p" "${OCF_RESKEY_etcd_pid_file}" "-a" "-e" "/var/lib/etcd/error.log" "-o" "/var/lib/etcd/console.log" "/usr/bin/etcd" "$@" 1>&2
- $SU -u ${OCF_RESKEY_etcd_user} -g ${OCF_RESKEY_etcd_group} -- "/usr/local/bin/daemonize" "-p" "${OCF_RESKEY_etcd_pid_file}" "-a" "-e" "/var/lib/etcd/error.log" "-o" "/var/lib/etcd/console.log" "/usr/bin/etcd" "$@"
+  cmd="${SU} -u "${OCF_RESKEY_user}" -g "${OCF_RESKEY_group}" -- \
+      /usr/local/sbin/daemonize -p "${OCF_RESKEY_pid_file}" -a -e \
+      /var/lib/etcd/error.log -o /var/lib/etcd/console.log /usr/local/sbin/etcd"
+
+  for arg in "$@"; do
+    cmd="${cmd} ${arg}"
+  done
+
+  echo "Command: ${cmd}"
+
+  ${cmd} 2>&1
+
+  return $?
 }
 
 etcd_usage() {
@@ -343,94 +548,97 @@ END
 etcd_start() {
   local potential_pid
 
-  if [[ -f "${OCF_RESKEY_etcd_pid_file}" ]]; then
-    potential_pid=$(cat ${OCF_RESKEY_etcd_pid_file})
+  set -x
 
-    kill -s 0 ${potential_pid} >/dev/null 2>&1
-     
-    if [ "$?" == "0" ]; then
-      ocf_log error "PID file ${OCF_RESKEY_etcd_pid_file} exists and is running.  Refusing to start!"
-      return $OCF_ERR_GENERIC
+  ETCD_ARGS=($(make_etcd_arguments))
+
+  if [[ -f "${OCF_RESKEY_pid_file}" ]]; then
+    potential_pid=$(cat "${OCF_RESKEY_pid_file}")
+
+    if [ "$?" != "0" ]; then
+      ocf_log error "Unable to read pid file ${OCF_RESKEY_pid_file}, exiting"
+      return "$OCF_ER_GENERIC"
+    fi
+
+    if [ "${potential_pid}" == "0" ]; then
+      ocf_log warn "Strange anomaly, etcd pid file contains pid 0, deleting"
+      rm -rf "${OCF_RESKEY_pid_file}"
     else
-      ocf_log error "PID file ${OCF_RESKEY_etcd_pid_file} exists but it stale.  Removing"
-      rm -f ${OCF_RESKEY_etcd_pid_file}
+      kill -s 0 "${potential_pid}" >/dev/null 2>&1
+
+      if [ "$?" == "0" ]; then
+        ocf_log error "PID file ${OCF_RESKEY_pid_file} exists and is running.  Refusing to start"
+        return "$OCF_ERR_GENERIC"
+      else
+        ocf_log error "PID file ${OCF_RESKEY_pid_file} exists but it stale.  Removing"
+        rm -f "${OCF_RESKEY_pid_file}"
+      fi
     fi
   fi
 
-  # 
-  # Ok, building arguments
   #
-  ETCD_ARGS=$(make_etcd_arguments)
-
-  #
-  #  Clean the environment
-  #
-  sanitize_env
-
-  # 
   # And go!
   #
-  etcd_runasowner ${ETCD_ARGS}
+  etcd_runasowner ${ETCD_ARGS[@]}
 
   PID=$(etcd_pid)
 
-  if [[ ! ${PID} ]] || [[ ! ${PID} =~ ^[0-9]+$ ]]; then
+  if [[ ! "${PID}" ]] || [[ ! "${PID}" =~ ^[0-9]+$ ]]; then
     ocf_log error "Unable to start etcd"
-    return $OCF_ERR_GENERIC
+    return "$OCF_ERR_GENERIC"
   fi
 
-  echo ${PID} > ${OCF_RESKEY_etcd_pid_file} || {
-    ocf_log error "Unable to write pidfile ${OCF_RESKEY_etcd_pid_file}"
-    return $OCF_ERR_GENERIC 
+  echo "${PID}" >"${OCF_RESKEY_pid_file}" || {
+    ocf_log error "Unable to write pidfile ${OCF_RESKEY_pid_file}"
+    return "$OCF_ERR_GENERIC"
   }
- 
-  return $OCF_SUCCESS
+
+  return "$OCF_SUCCESS"
 }
 
 etcd_stop() {
-  if [[ ! -f "${OCF_RESKEY_etcd_pid_file}" ]]; then
+  if [[ ! -f "${OCF_RESKEY_pid_file}" ]]; then
     PID=$(etcd_pid)
     if [ "$?" != "0" ]; then
       ocf_log info "ETCD is not running on this node, cannot stop"
-      return $OCF_SUCCESS
+      return "$OCF_SUCCESS"
     else
       ocf_log error "ETCD is running on this node but has no pid file"
-      etcd_kill ${PID} || {
+      etcd_kill "${PID}" || {
         ocf_log info "ETCD is refusing to die!"
-        return $OCF_ERR_GENERIC
+        return "$OCF_ERR_GENERIC"
       }
-      return $OCF_SUCCESS
+      return "$OCF_SUCCESS"
     fi
   else
-    pidfile_pid=$(cat ${OCF_RESKEY_etcd_pid_file})
-    
-    PID=$(etcd_pid) 
- 
-    if  [[ "${PID}" == "0" ]]; then
+    pidfile_pid=$(cat "${OCF_RESKEY_pid_file}")
+
+    PID=$(etcd_pid)
+
+    if [[ "${PID}" == "0" ]]; then
       ocf_log info "ETCD was running but is now not!"
-      rm -f ${OCF_RESKEY_etcd_pid_file} >/dev/null 2>&1
-      return $OCF_SUCCESS;
+      rm -f "${OCF_RESKEY_pid_file}" >/dev/null 2>&1
+      return "$OCF_SUCCESS"
     elif [[ "${PID}" != "${pidfile_pid}" ]]; then
       ocf_log warn "Pid file and pidof report different pids!"
-      
-      etcd_kill ${PID} ${pidfile_pid} && {
-        rm -f ${OCF_RESKEY_etcd_pid_file} 
+
+      etcd_kill "${PID}" "${pidfile_pid}" && {
+        rm -f "${OCF_RESKEY_pid_file}"
         ocf_log info "Successfully shut down ETCD"
-        return $OCF_SUCCESS
+        return "$OCF_SUCCESS"
       } || {
         ocf_log error "Unable to kill pid ${PID} and/or ${pidfile_pid}"
-        return $OCF_ERR_GENERIC
+        return "$OCF_ERR_GENERIC"
       }
-    else 
-      etcd_kill ${PID}
-      if [ "$?" == "0" ]; then
-        rm -f ${OCF_RESKEY_etcd_pid_file}
+    else
+      etcd_kill "${PID}" && {
+        rm -f "${OCF_RESKEY_pid_file}"
         ocf_log info "Successfully shut down ETCD"
-        return $OCF_SUCCESS
-      else
+        return "$OCF_SUCCESS"
+      } || {
         ocf_log error "Unable to shut down ETCD"
-        return $OCF_ERR_GENERIC
-      fi
+        return "$OCF_ERR_GENERIC"
+      }
     fi
   fi
 }
@@ -440,106 +648,116 @@ etcd_monitor() {
   # (SUCCESS), failed (ERROR) or _cleanly_ stopped (NOT RUNNING).
   # That is THREE states, not just yes/no.
 
-  if [[ ! -f ${OCF_RESKEY_etcd_pid_file} ]]; then 
+  if [[ ! -f "${OCF_RESKEY_pid_file}" ]]; then
     etcd_pid && {
       ocf_log warn "ETCD running with no pid file!"
-      return $OCF_ERR_GENERIC
+      return "$OCF_ERR_GENERIC"
     }
 
-    return $OCF_NOT_RUNNING
-  fi 
+    return "$OCF_NOT_RUNNING"
+  fi
 
   actualpid=$(etcd_pid) || {
     ocf_log error "Unable to identify running etcd"
-    return $OCF_ERR_GENERIC
+    return "$OCF_ERR_GENERIC"
   }
 
-  filepid=$(cat ${OCF_RESKEY_etcd_pid_file}) || {
+  filepid=$(cat "${OCF_RESKEY_pid_file}") || {
     ocf_log warn "Unable to get pid from file"
-    return $OCF_ERR_GENERIC
+    return "$OCF_ERR_GENERIC"
   }
-  
+
   if [[ "${filepid}" != "${actualpid}" ]]; then
     ocf_log warn "ETCD is running however it is not the pid referenced in the pidfile"
-    return $OCF_ERR_GENERIC
+    return "$OCF_ERR_GENERIC"
   fi
 
-  kill -s 0 $(cat ${OCF_RESKEY_etcd_pid_file}) >/dev/null 2>&1 || {
-    ocf_log error "Pid file ${OCF_RESKEY_etcd_pid_file} exists but pid is not running"
-    return $OCF_ERR_GENERIC
+  kill -s 0 $(cat "${OCF_RESKEY_pid_file}") >/dev/null 2>&1 || {
+    ocf_log error "Pid file ${OCF_RESKEY_pid_file} exists but pid is not running"
+    return "$OCF_ERR_GENERIC"
   }
 
-  ETCDCTL_API=3 etcdctl --endpoints=https://[127.0.0.1]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints=https://[127.0.0.1]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
     --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key \
-    get foo || {
+    member list || {
     ocf_log error "Unable to query etcd at https://[127.0.0.1]:2379"
-    return $OCF_ERR_GENERIC
+    return "$OCF_ERR_GENERIC"
   }
 
-  return $OCF_SUCCESS
+  return "$OCF_SUCCESS"
 }
 
 etcd_validate() {
-  return $OCF_SUCCESS
+  return "$OCF_SUCCESS"
 }
 
 #
-# first we will initialize the config
+# Make Pidfile Dir
 #
-rets=$(init_config) || return $OCF_ERR_GENERIC
 
-set -a
-eval "${rets}"  || return $OCF_ERR_GENERIC
-set +a
+piddir="${OCF_RESKEY_pid_file%/etcd.pid}"
+
+output=$(ls -ldZ "${piddir}" 2>&1)
+# && ocf_log info "Listing of etcd pid dir: ${output}"
+
+output=$(mkdir -p "${piddir}" 2>&1)
+# || ocf_log warn "Cannot mkdir -p ${piddir}: ${output}"
+
+output=$(chown "${OCF_RESKEY_user}":"${OCF_RESKEY_group}" "${piddir}" 2>&1)
+# || ocf_log warn "Cannot chown ${OCF_RESKEY_user}:${OCF_RESKEY_group} ${piddir}: ${output}"
+
+output=$(chmod 770 ${piddir} 2>&1)
+# || ocf_log warn "Cannot chmod 770 ${piddir}: ${output}"
 
 #
 # Then we determine the arguments
 #
-case $__OCF_ACTION in
-  meta-data)
-    meta_data
-    exit $OCF_SUCCESS
-    ;;
-  start)
-    ocf_log info "Starting ${OCF_RESOURCE_INSTANCE}."
-    etcd_start
-    ;;
-  stop)
-    ocf_log info "Stopping ${OCF_RESOURCE_INSTANCE}."
-    etcd_stop
-    ;;
-  monitor)
-    etcd_monitor
-    ;;
-  reload)
-    ocf_log info "Reloading ${OCF_RESOURCE_INSTANCE} ..."
-    etcd_stop
-    sleep 5
-    etcd_start
-    set +x
-    ;;
-  validate-all)
-    etcd_validate
-    ;;
-  usage|help)
-    etcd_usage
-    exit $OCF_SUCCESS
-    ;;
-  migrate_to)
-    ocf_log info "Prepping to stop ${OCF_RESOURCE_INSTANCE} for migration"
-    return $OCF_SUCCESS
-    ;;
-  migrate_from)
-    ocf_log info "Prepping to start ${OCF_RESOURCE_INSTANCE} after migration"
-    return $OCF_SUCCESS
-    #etcd_start
-    ;;
-  *)
-    etcd_usage
-    exit $OCF_ERR_UNIMPLEMENTED
-    ;;
+case "$__OCF_ACTION" in
+meta-data)
+  meta_data
+  exit "$OCF_SUCCESS"
+  ;;
+start)
+  ocf_log info "Starting ${OCF_RESOURCE_INSTANCE}."
+  etcd_start
+  exit $?
+  ;;
+stop)
+  ocf_log info "Stopping ${OCF_RESOURCE_INSTANCE}."
+  etcd_stop
+  exit $?
+  ;;
+monitor)
+  etcd_monitor
+  ;;
+reload)
+  ocf_log info "Reloading ${OCF_RESOURCE_INSTANCE} ..."
+  etcd_stop
+  sleep 5
+  etcd_start
+  exit $?
+  ;;
+validate-all)
+  etcd_validate
+  ;;
+usage | help)
+  etcd_usage
+  exit "$OCF_SUCCESS"
+  ;;
+migrate_to)
+  ocf_log info "Prepping to stop ${OCF_RESOURCE_INSTANCE} for migration"
+  return "$OCF_SUCCESS"
+  ;;
+migrate_from)
+  ocf_log info "Prepping to start ${OCF_RESOURCE_INSTANCE} after migration"
+  return "$OCF_SUCCESS"
+  etcd_start
+  ;;
+*)
+  etcd_usage
+  exit "$OCF_ERR_UNIMPLEMENTED"
+  ;;
 esac
 rc=$?
 ocf_log debug "${OCF_RESOURCE_INSTANCE} $__OCF_ACTION : $rc"
 exit $rc
-
