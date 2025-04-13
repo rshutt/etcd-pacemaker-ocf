@@ -76,14 +76,12 @@ OCF_RESKEY_proxy_write_timeout_default="5000"
 OCF_RESKEY_proxy_read_timeout_default="0"
 OCF_RESKEY_cert_file_default=""
 OCF_RESKEY_key_file_default=""
-OCF_RESKEY_client_cert_auth_default="false"
 OCF_RESKEY_client_crl_file_default=""
 OCF_RESKEY_client_cert_allowed_hostname_default=""
 OCF_RESKEY_trusted_ca_file_default=""
 OCF_RESKEY_auto_tls_default="false"
 OCF_RESKEY_peer_cert_file_default=""
 OCF_RESKEY_peer_key_file_default=""
-OCF_RESKEY_peer_client_cert_auth_default="false"
 OCF_RESKEY_peer_crl_file_default=""
 OCF_RESKEY_peer_trusted_ca_file_default=""
 OCF_RESKEY_peer_auto_tls_default="false"
@@ -105,77 +103,75 @@ OCF_RESKEY_user_default="etcd"
 OCF_RESKEY_group_default="etcd"
 OCF_RESKEY_pid_file_default="/var/run/etcd/etcd.pid"
 
-: ${OCF_RESKEY_name="${OCF_RESKEY_name_default}"}
-: ${OCF_RESKEY_data_dir="${OCF_RESKEY_data_dir_default}"}
-: ${OCF_RESKEY_wal_dir="${OCF_RESKEY_wal_dir_default}"}
-: ${OCF_RESKEY_snapshot_count="${OCF_RESKEY_snapshot_count_default}"}
-: ${OCF_RESKEY_heartbeat_interval="${OCF_RESKEY_heartbeat_interval_default}"}
-: ${OCF_RESKEY_election_timeout="${OCF_RESKEY_election_timeout_default}"}
-: ${OCF_RESKEY_initial_election_tick_advance="${OCF_RESKEY_initial_election_tick_advance_default}"}
-: ${OCF_RESKEY_listen_peer_urls="${OCF_RESKEY_listen_peer_urls_default}"}
-: ${OCF_RESKEY_listen_client_urls="${OCF_RESKEY_listen_client_urls_default}"}
-: ${OCF_RESKEY_max_snapshots="${OCF_RESKEY_max_snapshots_default}"}
-: ${OCF_RESKEY_max_wals="${OCF_RESKEY_max_wals_default}"}
-: ${OCF_RESKEY_cors="${OCF_RESKEY_cors_default}"}
-: ${OCF_RESKEY_quota_backend_bytes="${OCF_RESKEY_quota_backend_bytes_default}"}
-: ${OCF_RESKEY_backend_batch_limit="${OCF_RESKEY_backend_batch_limit_default}"}
-: ${OCF_RESKEY_backend_bbolt_freelist_type="${OCF_RESKEY_backend_bbolt_freelist_type_default}"}
-: ${OCF_RESKEY_backend_batch_interval="${OCF_RESKEY_backend_batch_interval_default}"}
-: ${OCF_RESKEY_max_txn_ops="${OCF_RESKEY_max_txn_ops_default}"}
-: ${OCF_RESKEY_max_request_bytes="${OCF_RESKEY_max_request_bytes_default}"}
-: ${OCF_RESKEY_grpc_keepalive_min_time="${OCF_RESKEY_grpc_keepalive_min_time_default}"}
-: ${OCF_RESKEY_grpc_keepalive_interval="${OCF_RESKEY_grpc_keepalive_interval_default}"}
-: ${OCF_RESKEY_grpc_keepalive_timeout="${OCF_RESKEY_grpc_keepalive_timeout_default}"}
-: ${OCF_RESKEY_initial_advertise_peer_urls="${OCF_RESKEY_initial_advertise_peer_urls_default}"}
-: ${OCF_RESKEY_initial_cluster="${OCF_RESKEY_initial_cluster_default}"}
-: ${OCF_RESKEY_initial_cluster_state="${OCF_RESKEY_initial_cluster_state_default}"}
-: ${OCF_RESKEY_initial_cluster_token="${OCF_RESKEY_initial_cluster_token_default}"}
-: ${OCF_RESKEY_advertise_client_urls="${OCF_RESKEY_advertise_client_urls_default}"}
-: ${OCF_RESKEY_discovery="${OCF_RESKEY_discovery_default}"}
-: ${OCF_RESKEY_discovery_srv="${OCF_RESKEY_discovery_srv_default}"}
-: ${OCF_RESKEY_discovery_name="${OCF_RESKEY_discovery_name_default}"}
-: ${OCF_RESKEY_discovery_fallback="${OCF_RESKEY_discovery_fallback_default}"}
-: ${OCF_RESKEY_discovery_proxy="${OCF_RESKEY_discovery_proxy_default}"}
-: ${OCF_RESKEY_strict_reconfig_check="${OCF_RESKEY_strict_reconfig_check_default}"}
-: ${OCF_RESKEY_auto_compaction_retention="${OCF_RESKEY_auto_compaction_retention_default}"}
-: ${OCF_RESKEY_auto_compaction_mode="${OCF_RESKEY_auto_compaction_mode_default}"}
-: ${OCF_RESKEY_enable_v2="${OCF_RESKEY_enable_v2_default}"}
-: ${OCF_RESKEY_proxy="${OCF_RESKEY_proxy_default}"}
-: ${OCF_RESKEY_proxy_failure_wait="${OCF_RESKEY_proxy_failure_wait_default}"}
-: ${OCF_RESKEY_proxy_refresh_interval="${OCF_RESKEY_proxy_refresh_interval_default}"}
-: ${OCF_RESKEY_proxy_dial_timeout="${OCF_RESKEY_proxy_dial_timeout_default}"}
-: ${OCF_RESKEY_proxy_write_timeout="${OCF_RESKEY_proxy_write_timeout_default}"}
-: ${OCF_RESKEY_proxy_read_timeout="${OCF_RESKEY_proxy_read_timeout_default}"}
-: ${OCF_RESKEY_cert_file="${OCF_RESKEY_cert_file_default}"}
-: ${OCF_RESKEY_key_file="${OCF_RESKEY_key_file_default}"}
-: ${OCF_RESKEY_client_cert_auth="${OCF_RESKEY_client_cert_auth_default}"}
-: ${OCF_RESKEY_client_crl_file="${OCF_RESKEY_client_crl_file_default}"}
-: ${OCF_RESKEY_client_cert_allowed_hostname="${OCF_RESKEY_client_cert_allowed_hostname_default}"}
-: ${OCF_RESKEY_trusted_ca_file="${OCF_RESKEY_trusted_ca_file_default}"}
-: ${OCF_RESKEY_auto_tls="${OCF_RESKEY_auto_tls_default}"}
-: ${OCF_RESKEY_peer_cert_file="${OCF_RESKEY_peer_cert_file_default}"}
-: ${OCF_RESKEY_peer_key_file="${OCF_RESKEY_peer_key_file_default}"}
-: ${OCF_RESKEY_peer_client_cert_auth="${OCF_RESKEY_peer_client_cert_auth_default}"}
-: ${OCF_RESKEY_peer_crl_file="${OCF_RESKEY_peer_crl_file_default}"}
-: ${OCF_RESKEY_peer_trusted_ca_file="${OCF_RESKEY_peer_trusted_ca_file_default}"}
-: ${OCF_RESKEY_peer_auto_tls="${OCF_RESKEY_peer_auto_tls_default}"}
-: ${OCF_RESKEY_peer_cert_allowed_cn="${OCF_RESKEY_peer_cert_allowed_cn_default}"}
-: ${OCF_RESKEY_peer_cert_allowed_hostname="${OCF_RESKEY_peer_cert_allowed_hostname_default}"}
-: ${OCF_RESKEY_cipher_suites="${OCF_RESKEY_cipher_suites_default}"}
-: ${OCF_RESKEY_logger="${OCF_RESKEY_logger_default}"}
-: ${OCF_RESKEY_log_outputs="${OCF_RESKEY_log_outputs_default}"}
-: ${OCF_RESKEY_log_level="${OCF_RESKEY_log_level_default}"}
-: ${OCF_RESKEY_force_new_cluster="${OCF_RESKEY_force_new_cluster_default}"}
-: ${OCF_RESKEY_version="${OCF_RESKEY_version_default}"}
-: ${OCF_RESKEY_config_file="${OCF_RESKEY_config_file_default}"}
-: ${OCF_RESKEY_enable_pprof="${OCF_RESKEY_enable_pprof_default}"}
-: ${OCF_RESKEY_metrics="${OCF_RESKEY_metrics_default}"}
-: ${OCF_RESKEY_listen_metrics_urls="${OCF_RESKEY_listen_metrics_urls_default}"}
-: ${OCF_RESKEY_auth_token="${OCF_RESKEY_auth_token_default}"}
-: ${OCF_RESKEY_bcrypt_cost="${OCF_RESKEY_bcrypt_cost_default}"}
-: ${OCF_RESKEY_user="${OCF_RESKEY_user_default}"}
-: ${OCF_RESKEY_group="${OCF_RESKEY_group_default}"}
-: ${OCF_RESKEY_pid_file="${OCF_RESKEY_pid_file_default}"}
+: ${OCF_RESKEY_name=${OCF_RESKEY_name_default}}
+: ${OCF_RESKEY_data_dir=${OCF_RESKEY_data_dir_default}}
+: ${OCF_RESKEY_wal_dir=${OCF_RESKEY_wal_dir_default}}
+: ${OCF_RESKEY_snapshot_count=${OCF_RESKEY_snapshot_count_default}}
+: ${OCF_RESKEY_heartbeat_interval=${OCF_RESKEY_heartbeat_interval_default}}
+: ${OCF_RESKEY_election_timeout=${OCF_RESKEY_election_timeout_default}}
+: ${OCF_RESKEY_initial_election_tick_advance=${OCF_RESKEY_initial_election_tick_advance_default}}
+: ${OCF_RESKEY_listen_peer_urls=${OCF_RESKEY_listen_peer_urls_default}}
+: ${OCF_RESKEY_listen_client_urls=${OCF_RESKEY_listen_client_urls_default}}
+: ${OCF_RESKEY_max_snapshots=${OCF_RESKEY_max_snapshots_default}}
+: ${OCF_RESKEY_max_wals=${OCF_RESKEY_max_wals_default}}
+: ${OCF_RESKEY_cors=${OCF_RESKEY_cors_default}}
+: ${OCF_RESKEY_quota_backend_bytes=${OCF_RESKEY_quota_backend_bytes_default}}
+: ${OCF_RESKEY_backend_batch_limit=${OCF_RESKEY_backend_batch_limit_default}}
+: ${OCF_RESKEY_backend_bbolt_freelist_type=${OCF_RESKEY_backend_bbolt_freelist_type_default}}
+: ${OCF_RESKEY_backend_batch_interval=${OCF_RESKEY_backend_batch_interval_default}}
+: ${OCF_RESKEY_max_txn_ops=${OCF_RESKEY_max_txn_ops_default}}
+: ${OCF_RESKEY_max_request_bytes=${OCF_RESKEY_max_request_bytes_default}}
+: ${OCF_RESKEY_grpc_keepalive_min_time=${OCF_RESKEY_grpc_keepalive_min_time_default}}
+: ${OCF_RESKEY_grpc_keepalive_interval=${OCF_RESKEY_grpc_keepalive_interval_default}}
+: ${OCF_RESKEY_grpc_keepalive_timeout=${OCF_RESKEY_grpc_keepalive_timeout_default}}
+: ${OCF_RESKEY_initial_advertise_peer_urls=${OCF_RESKEY_initial_advertise_peer_urls_default}}
+: ${OCF_RESKEY_initial_cluster=${OCF_RESKEY_initial_cluster_default}}
+: ${OCF_RESKEY_initial_cluster_state=${OCF_RESKEY_initial_cluster_state_default}}
+: ${OCF_RESKEY_initial_cluster_token=${OCF_RESKEY_initial_cluster_token_default}}
+: ${OCF_RESKEY_advertise_client_urls=${OCF_RESKEY_advertise_client_urls_default}}
+: ${OCF_RESKEY_discovery=${OCF_RESKEY_discovery_default}}
+: ${OCF_RESKEY_discovery_srv=${OCF_RESKEY_discovery_srv_default}}
+: ${OCF_RESKEY_discovery_name=${OCF_RESKEY_discovery_name_default}}
+: ${OCF_RESKEY_discovery_fallback=${OCF_RESKEY_discovery_fallback_default}}
+: ${OCF_RESKEY_discovery_proxy=${OCF_RESKEY_discovery_proxy_default}}
+: ${OCF_RESKEY_strict_reconfig_check=${OCF_RESKEY_strict_reconfig_check_default}}
+: ${OCF_RESKEY_auto_compaction_retention=${OCF_RESKEY_auto_compaction_retention_default}}
+: ${OCF_RESKEY_auto_compaction_mode=${OCF_RESKEY_auto_compaction_mode_default}}
+: ${OCF_RESKEY_enable_v2=${OCF_RESKEY_enable_v2_default}}
+: ${OCF_RESKEY_proxy=${OCF_RESKEY_proxy_default}}
+: ${OCF_RESKEY_proxy_failure_wait=${OCF_RESKEY_proxy_failure_wait_default}}
+: ${OCF_RESKEY_proxy_refresh_interval=${OCF_RESKEY_proxy_refresh_interval_default}}
+: ${OCF_RESKEY_proxy_dial_timeout=${OCF_RESKEY_proxy_dial_timeout_default}}
+: ${OCF_RESKEY_proxy_write_timeout=${OCF_RESKEY_proxy_write_timeout_default}}
+: ${OCF_RESKEY_proxy_read_timeout=${OCF_RESKEY_proxy_read_timeout_default}}
+: ${OCF_RESKEY_cert_file=${OCF_RESKEY_cert_file_default}}
+: ${OCF_RESKEY_key_file=${OCF_RESKEY_key_file_default}}
+: ${OCF_RESKEY_client_crl_file=${OCF_RESKEY_client_crl_file_default}}
+: ${OCF_RESKEY_client_cert_allowed_hostname=${OCF_RESKEY_client_cert_allowed_hostname_default}}
+: ${OCF_RESKEY_trusted_ca_file=${OCF_RESKEY_trusted_ca_file_default}}
+: ${OCF_RESKEY_auto_tls=${OCF_RESKEY_auto_tls_default}}
+: ${OCF_RESKEY_peer_cert_file=${OCF_RESKEY_peer_cert_file_default}}
+: ${OCF_RESKEY_peer_key_file=${OCF_RESKEY_peer_key_file_default}}
+: ${OCF_RESKEY_peer_crl_file=${OCF_RESKEY_peer_crl_file_default}}
+: ${OCF_RESKEY_peer_trusted_ca_file=${OCF_RESKEY_peer_trusted_ca_file_default}}
+: ${OCF_RESKEY_peer_auto_tls=${OCF_RESKEY_peer_auto_tls_default}}
+: ${OCF_RESKEY_peer_cert_allowed_cn=${OCF_RESKEY_peer_cert_allowed_cn_default}}
+: ${OCF_RESKEY_peer_cert_allowed_hostname=${OCF_RESKEY_peer_cert_allowed_hostname_default}}
+: ${OCF_RESKEY_cipher_suites=${OCF_RESKEY_cipher_suites_default}}
+: ${OCF_RESKEY_logger=${OCF_RESKEY_logger_default}}
+: ${OCF_RESKEY_log_outputs=${OCF_RESKEY_log_outputs_default}}
+: ${OCF_RESKEY_log_level=${OCF_RESKEY_log_level_default}}
+: ${OCF_RESKEY_force_new_cluster=${OCF_RESKEY_force_new_cluster_default}}
+: ${OCF_RESKEY_version=${OCF_RESKEY_version_default}}
+: ${OCF_RESKEY_config_file=${OCF_RESKEY_config_file_default}}
+: ${OCF_RESKEY_enable_pprof=${OCF_RESKEY_enable_pprof_default}}
+: ${OCF_RESKEY_metrics=${OCF_RESKEY_metrics_default}}
+: ${OCF_RESKEY_listen_metrics_urls=${OCF_RESKEY_listen_metrics_urls_default}}
+: ${OCF_RESKEY_auth_token=${OCF_RESKEY_auth_token_default}}
+: ${OCF_RESKEY_bcrypt_cost=${OCF_RESKEY_bcrypt_cost_default}}
+: ${OCF_RESKEY_user=${OCF_RESKEY_user_default}}
+: ${OCF_RESKEY_group=${OCF_RESKEY_group_default}}
+: ${OCF_RESKEY_pid_file=${OCF_RESKEY_pid_file_default}}
 
 ######################################################################
 
@@ -195,13 +191,13 @@ make_etcd_arguments() {
 
   while IFS= read -r line; do
     ALL_ENV+=("${line}")
-  done <<<"$(set | grep -E "^OCF_RESKEY_" | grep -Evi "CRM_" | grep -Ev "default=")"
+  done <<< "$(set | grep -E "^OCF_RESKEY_" | grep -Evi "CRM_" | grep -Ev "default=")"
 
   BLACKLIST=(
-    "pid-file="
-    "user="
-    "group="
-    "CRM"
+    "pid-file=" \
+    "user=" \
+    "group=" \
+    "CRM" \
   )
 
   declare ARG_LIST=()
@@ -227,7 +223,7 @@ make_etcd_arguments() {
 
   echo "${ARG_LIST[@]}"
 
-  return
+  return;
 }
 
 meta_data() {
@@ -372,9 +368,6 @@ etcd for failures.
     <parameter name="key_file" unique="0" required="0">
       <content type="string" default="${OCF_RESKEY_key_file_default}" />
     </parameter>
-    <parameter name="client_cert_auth" unique="0" required="0">
-      <content type="string" default="${OCF_RESKEY_client_cert_auth_default}" />
-    </parameter>
     <parameter name="client_crl_file" unique="0" required="0">
       <content type="string" default="${OCF_RESKEY_client_crl_file_default}" />
     </parameter>
@@ -392,9 +385,6 @@ etcd for failures.
     </parameter>
     <parameter name="peer_key_file" unique="0" required="0">
       <content type="string" default="${OCF_RESKEY_peer_key_file_default}" />
-    </parameter>
-    <parameter name="peer_client_cert_auth" unique="0" required="0">
-      <content type="string" default="${OCF_RESKEY_peer_client_cert_auth_default}" />
     </parameter>
     <parameter name="peer_crl_file" unique="0" required="0">
       <content type="string" default="${OCF_RESKEY_peer_crl_file_default}" />
@@ -469,13 +459,15 @@ END
 
 #######################################################################
 
+
 etcd_pid() {
   local pid=""
 
   #pid=$(pidof /usr/local/sbin/etcd)
   pid=$(pgrep -u etcd -f /usr/local/sbin/etcd)
 
-  if [[ "$?" == "0" ]] && (echo "${pid}" | grep -E "^[0-9]+$" >/dev/null 2>&1); then
+
+  if [[ "$?" == "0" ]] && ( echo ${pid} | grep -E "^[0-9]+$" >/dev/null 2>&1 ); then
     printf "%d\n" "${pid}"
     return 0
   else
@@ -491,7 +483,7 @@ etcd_kill() {
     return 1
   fi
 
-  while (("$#")); do
+  while (( "$#" )); do
     PIDS+=("$1")
     shift
   done
@@ -507,11 +499,11 @@ etcd_kill() {
   sleep 5
 
   for pid in "${PIDS[@]}"; do
-    ps -p "${pid}" >/dev/null 2>&1
+    ps -p ${pid} >/dev/null 2>&1
 
     if [ "$?" == "0" ]; then
       ocf_log error "Unable to kill pid ${pid}"
-      return "$OCF_ERR_GENERIC"
+      return $OCF_ERR_GENERIC
     else
       ocf_log info "PID ${pid} has been killed with SIGTERM"
     fi
@@ -524,8 +516,8 @@ etcd_kill() {
 #   Run the given command in the Resource owner environment...
 #
 etcd_runasowner() {
-  cmd="${SU} -u "${OCF_RESKEY_user}" -g "${OCF_RESKEY_group}" -- \
-      /usr/local/sbin/daemonize -p "${OCF_RESKEY_pid_file}" -a -e \
+  cmd="${SU} -u ${OCF_RESKEY_user} -g ${OCF_RESKEY_group} -- \
+      /usr/local/sbin/daemonize -p ${OCF_RESKEY_pid_file} -a -e \
       /var/lib/etcd/error.log -o /var/lib/etcd/console.log /usr/local/sbin/etcd"
 
   for arg in "$@"; do
@@ -533,6 +525,8 @@ etcd_runasowner() {
   done
 
   echo "Command: ${cmd}"
+
+  echo "Command: ${cmd}" >> /tmp/etcd-agent-run.txt
 
   ${cmd} 2>&1
 
@@ -550,50 +544,57 @@ etcd_start() {
 
   set -x
 
-  ETCD_ARGS=($(make_etcd_arguments))
+  ETCD_ARGS=( $(make_etcd_arguments) )
 
   if [[ -f "${OCF_RESKEY_pid_file}" ]]; then
-    potential_pid=$(cat "${OCF_RESKEY_pid_file}")
+    potential_pid=$(cat ${OCF_RESKEY_pid_file})
 
     if [ "$?" != "0" ]; then
       ocf_log error "Unable to read pid file ${OCF_RESKEY_pid_file}, exiting"
-      return "$OCF_ER_GENERIC"
+      return $OCF_ER_GENERIC
     fi
 
     if [ "${potential_pid}" == "0" ]; then
       ocf_log warn "Strange anomaly, etcd pid file contains pid 0, deleting"
-      rm -rf "${OCF_RESKEY_pid_file}"
+      rm -rf ${OCF_RESKEY_pid_file}
     else
-      kill -s 0 "${potential_pid}" >/dev/null 2>&1
+      kill -s 0 ${potential_pid} >/dev/null 2>&1
 
       if [ "$?" == "0" ]; then
         ocf_log error "PID file ${OCF_RESKEY_pid_file} exists and is running.  Refusing to start"
-        return "$OCF_ERR_GENERIC"
+        return $OCF_ERR_GENERIC
       else
         ocf_log error "PID file ${OCF_RESKEY_pid_file} exists but it stale.  Removing"
-        rm -f "${OCF_RESKEY_pid_file}"
+        rm -f ${OCF_RESKEY_pid_file}
       fi
     fi
   fi
-
   #
   # And go!
   #
+  ocf_log info "Starting etcd with args ${ETCD_ARGS[@]}"
   etcd_runasowner ${ETCD_ARGS[@]}
+  
+  ocf_log info "Sleeping 3 seconds to determine pid"
+  sleep 3 
 
   PID=$(etcd_pid)
 
-  if [[ ! "${PID}" ]] || [[ ! "${PID}" =~ ^[0-9]+$ ]]; then
+  ocf_log info "Got pid: ${PID}"
+
+  if [[ ! ${PID} ]] || [[ ! ${PID} =~ ^[0-9]+$ ]]; then
     ocf_log error "Unable to start etcd"
-    return "$OCF_ERR_GENERIC"
+    return $OCF_ERR_GENERIC
   fi
 
-  echo "${PID}" >"${OCF_RESKEY_pid_file}" || {
+  ocf_log info "Writing ${PID} to ${OCF_RESKEY_pid_file}"
+
+  echo ${PID} > ${OCF_RESKEY_pid_file} || {
     ocf_log error "Unable to write pidfile ${OCF_RESKEY_pid_file}"
-    return "$OCF_ERR_GENERIC"
+    return $OCF_ERR_GENERIC
   }
 
-  return "$OCF_SUCCESS"
+  return $OCF_SUCCESS
 }
 
 etcd_stop() {
@@ -601,44 +602,45 @@ etcd_stop() {
     PID=$(etcd_pid)
     if [ "$?" != "0" ]; then
       ocf_log info "ETCD is not running on this node, cannot stop"
-      return "$OCF_SUCCESS"
+      return $OCF_SUCCESS
     else
       ocf_log error "ETCD is running on this node but has no pid file"
-      etcd_kill "${PID}" || {
+      etcd_kill ${PID} || {
         ocf_log info "ETCD is refusing to die!"
-        return "$OCF_ERR_GENERIC"
+        return $OCF_ERR_GENERIC
       }
-      return "$OCF_SUCCESS"
+      return $OCF_SUCCESS
     fi
   else
-    pidfile_pid=$(cat "${OCF_RESKEY_pid_file}")
+    pidfile_pid=$(cat ${OCF_RESKEY_pid_file})
 
     PID=$(etcd_pid)
 
-    if [[ "${PID}" == "0" ]]; then
+    if  [[ "${PID}" == "0" ]]; then
       ocf_log info "ETCD was running but is now not!"
-      rm -f "${OCF_RESKEY_pid_file}" >/dev/null 2>&1
-      return "$OCF_SUCCESS"
+      rm -f ${OCF_RESKEY_pid_file} >/dev/null 2>&1
+      return $OCF_SUCCESS;
     elif [[ "${PID}" != "${pidfile_pid}" ]]; then
       ocf_log warn "Pid file and pidof report different pids!"
 
-      etcd_kill "${PID}" "${pidfile_pid}" && {
-        rm -f "${OCF_RESKEY_pid_file}"
+      etcd_kill ${PID} ${pidfile_pid} && {
+        rm -f ${OCF_RESKEY_pid_file}
         ocf_log info "Successfully shut down ETCD"
-        return "$OCF_SUCCESS"
+        return $OCF_SUCCESS
       } || {
         ocf_log error "Unable to kill pid ${PID} and/or ${pidfile_pid}"
-        return "$OCF_ERR_GENERIC"
+        return $OCF_ERR_GENERIC
       }
     else
-      etcd_kill "${PID}" && {
-        rm -f "${OCF_RESKEY_pid_file}"
+      etcd_kill ${PID}
+      if [ "$?" == "0" ]; then
+        rm -f ${OCF_RESKEY_pid_file}
         ocf_log info "Successfully shut down ETCD"
-        return "$OCF_SUCCESS"
-      } || {
+        return $OCF_SUCCESS
+      else
         ocf_log error "Unable to shut down ETCD"
-        return "$OCF_ERR_GENERIC"
-      }
+        return $OCF_ERR_GENERIC
+      fi
     fi
   fi
 }
@@ -648,62 +650,63 @@ etcd_monitor() {
   # (SUCCESS), failed (ERROR) or _cleanly_ stopped (NOT RUNNING).
   # That is THREE states, not just yes/no.
 
-  if [[ ! -f "${OCF_RESKEY_pid_file}" ]]; then
+  if [[ ! -f ${OCF_RESKEY_pid_file} ]]; then
     etcd_pid && {
       ocf_log warn "ETCD running with no pid file!"
-      return "$OCF_ERR_GENERIC"
+      return $OCF_ERR_GENERIC
     }
 
-    return "$OCF_NOT_RUNNING"
+    return $OCF_NOT_RUNNING
   fi
 
   actualpid=$(etcd_pid) || {
     ocf_log error "Unable to identify running etcd"
-    return "$OCF_ERR_GENERIC"
+    return $OCF_ERR_GENERIC
   }
 
-  filepid=$(cat "${OCF_RESKEY_pid_file}") || {
+  filepid=$(cat ${OCF_RESKEY_pid_file}) || {
     ocf_log warn "Unable to get pid from file"
-    return "$OCF_ERR_GENERIC"
+    return $OCF_ERR_GENERIC
   }
 
   if [[ "${filepid}" != "${actualpid}" ]]; then
     ocf_log warn "ETCD is running however it is not the pid referenced in the pidfile"
-    return "$OCF_ERR_GENERIC"
+    return $OCF_ERR_GENERIC
   fi
 
-  kill -s 0 $(cat "${OCF_RESKEY_pid_file}") >/dev/null 2>&1 || {
+  kill -s 0 $(cat ${OCF_RESKEY_pid_file}) >/dev/null 2>&1 || {
     ocf_log error "Pid file ${OCF_RESKEY_pid_file} exists but pid is not running"
-    return "$OCF_ERR_GENERIC"
+    return $OCF_ERR_GENERIC
   }
 
   ETCDCTL_API=3 /usr/local/bin/etcdctl --endpoints=https://[127.0.0.1]:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt \
     --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt --key=/etc/kubernetes/pki/etcd/healthcheck-client.key \
     member list || {
     ocf_log error "Unable to query etcd at https://[127.0.0.1]:2379"
-    return "$OCF_ERR_GENERIC"
+    return $OCF_ERR_GENERIC
   }
 
-  return "$OCF_SUCCESS"
+  return $OCF_SUCCESS
 }
 
 etcd_validate() {
-  return "$OCF_SUCCESS"
+  return $OCF_SUCCESS
 }
+
 
 #
 # Make Pidfile Dir
 #
 
-piddir="${OCF_RESKEY_pid_file%/etcd.pid}"
+piddir=$(echo ${OCF_RESKEY_pid_file} | sed 's#^\(.*\)\/\([^\\]\+\)$#\1#g')
 
-output=$(ls -ldZ "${piddir}" 2>&1)
+output=$(ls -ldZ ${piddir} 2>&1) 
 # && ocf_log info "Listing of etcd pid dir: ${output}"
 
-output=$(mkdir -p "${piddir}" 2>&1)
+output=$(mkdir -p ${piddir} 2>&1) 
 # || ocf_log warn "Cannot mkdir -p ${piddir}: ${output}"
 
-output=$(chown "${OCF_RESKEY_user}":"${OCF_RESKEY_group}" "${piddir}" 2>&1)
+output=$(chown ${OCF_RESKEY_user}:${OCF_RESKEY_group} ${piddir} 2>&1) 
 # || ocf_log warn "Cannot chown ${OCF_RESKEY_user}:${OCF_RESKEY_group} ${piddir}: ${output}"
 
 output=$(chmod 770 ${piddir} 2>&1)
@@ -712,51 +715,51 @@ output=$(chmod 770 ${piddir} 2>&1)
 #
 # Then we determine the arguments
 #
-case "$__OCF_ACTION" in
-meta-data)
-  meta_data
-  exit "$OCF_SUCCESS"
-  ;;
-start)
-  ocf_log info "Starting ${OCF_RESOURCE_INSTANCE}."
-  etcd_start
-  exit $?
-  ;;
-stop)
-  ocf_log info "Stopping ${OCF_RESOURCE_INSTANCE}."
-  etcd_stop
-  exit $?
-  ;;
-monitor)
-  etcd_monitor
-  ;;
-reload)
-  ocf_log info "Reloading ${OCF_RESOURCE_INSTANCE} ..."
-  etcd_stop
-  sleep 5
-  etcd_start
-  exit $?
-  ;;
-validate-all)
-  etcd_validate
-  ;;
-usage | help)
-  etcd_usage
-  exit "$OCF_SUCCESS"
-  ;;
-migrate_to)
-  ocf_log info "Prepping to stop ${OCF_RESOURCE_INSTANCE} for migration"
-  return "$OCF_SUCCESS"
-  ;;
-migrate_from)
-  ocf_log info "Prepping to start ${OCF_RESOURCE_INSTANCE} after migration"
-  return "$OCF_SUCCESS"
-  etcd_start
-  ;;
-*)
-  etcd_usage
-  exit "$OCF_ERR_UNIMPLEMENTED"
-  ;;
+case $__OCF_ACTION in
+  meta-data)
+    meta_data
+    exit $OCF_SUCCESS
+    ;;
+  start)
+    ocf_log info "Starting ${OCF_RESOURCE_INSTANCE}."
+    etcd_start
+    exit $?
+    ;;
+  stop)
+    ocf_log info "Stopping ${OCF_RESOURCE_INSTANCE}."
+    etcd_stop
+    exit $?
+    ;;
+  monitor)
+    etcd_monitor
+    ;;
+  reload)
+    ocf_log info "Reloading ${OCF_RESOURCE_INSTANCE} ..."
+    etcd_stop
+    sleep 5
+    etcd_start
+    exit $?
+    ;;
+  validate-all)
+    etcd_validate
+    ;;
+  usage|help)
+    etcd_usage
+    exit $OCF_SUCCESS
+    ;;
+  migrate_to)
+    ocf_log info "Prepping to stop ${OCF_RESOURCE_INSTANCE} for migration"
+    return $OCF_SUCCESS
+    ;;
+  migrate_from)
+    ocf_log info "Prepping to start ${OCF_RESOURCE_INSTANCE} after migration"
+    return $OCF_SUCCESS
+    #etcd_start
+    ;;
+  *)
+    etcd_usage
+    exit $OCF_ERR_UNIMPLEMENTED
+    ;;
 esac
 rc=$?
 ocf_log debug "${OCF_RESOURCE_INSTANCE} $__OCF_ACTION : $rc"
